@@ -1,6 +1,8 @@
 import random
 import csv
 from datetime import datetime, timedelta
+import secrets
+import string
 
 def generate_random_birthdate(start_year=1980, end_year=2005):
     start_date = datetime(start_year, 1, 1)
@@ -8,7 +10,17 @@ def generate_random_birthdate(start_year=1980, end_year=2005):
     delta = end_date - start_date
     random_days = random.randint(0, delta.days)
     random_date = start_date + timedelta(days=random_days)
-    return random_date.strftime("%Y-%m-%d")
+    return random_date
+
+def calculate_age(birthdate):
+    today = datetime.today()
+    age = today.year - birthdate.year - (today.month < birthdate.month or (today.month == birthdate.month and today.day < birthdate.day))
+    return age
+
+def generate_random_password(length=12):
+    alphabet = string.ascii_letters + string.digits + string.punctuation
+    password = ''.join(secrets.choice(alphabet) for i in range(length))
+    return password
 
 def data():
     # Generate mobile number
@@ -26,30 +38,45 @@ def data():
     # Generate email
     email = f"{name.lower()}{surname.lower()}{random.choice([i+1 for i in range(30)])}@gmail.com"
     
-    return {'Name': name, 'Surname': surname, 'Gender': gender, 'Email': email, 'Mobile Number': mobile_number, 'Birthdate': generate_random_birthdate()}
+    # Generate birthdate
+    birthdate = generate_random_birthdate()
+    
+    return {'Name': name, 'Surname': surname, 'Gender': gender, 'Email': email, 'Mobile Number': mobile_number, 'Birthdate': birthdate.strftime("%Y-%m-%d"), 'Age': calculate_age(birthdate), 'Password': generate_random_password()}
 
 def random_data_to_sql(numbers):
     with open("random_generated_data.sql", 'w') as sql:
-        sql.write(f"INSERT INTO `table_name` (`name`, `surname`, `gender`, `mobile_number`, `email`, `birthdate`) \nVALUES \n")
+        sql.write(f"INSERT INTO `table_name` (`name`, `surname`, `gender`, `mobile_number`, `email`, `birthdate`, `age`) \nVALUES \n")
         for _ in range(numbers):
             # Get random data
             row_data = data()
             # Generate SQL INSERT statement
-            sql.write(f"\t('{row_data['Name']}', '{row_data['Surname']}', '{row_data['Gender']}', {row_data['Mobile Number']}, '{row_data['Email']}', '{row_data['Birthdate']}')")
+            sql.write(f"\t('{row_data['Name']}', '{row_data['Surname']}', '{row_data['Gender']}', {row_data['Mobile Number']}, '{row_data['Email']}', '{row_data['Birthdate']}', {row_data['Age']}, `{row_data['Password']}`)")
             sql.write(";") if (_+1 == numbers) else sql.write(",\n")
 
 def random_data_to_csv(numbers):
     with open('random_generated_data.csv', 'w', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow(['Name', 'Surname', 'Gender', 'Mobile Number', 'Email', 'Birthdate'])
+        writer.writerow(['Name', 'Surname', 'Gender', 'Mobile Number', 'Email', 'Birthdate', 'Age', 'Password'])
         for _ in range(numbers):
             # Get random data
             row_data = data()
             # Write data to CSV file
-            writer.writerow([row_data['Name'], row_data['Surname'], row_data['Gender'], row_data['Mobile Number'], row_data['Email'], row_data['Birthdate']])
+            writer.writerow([row_data['Name'], row_data['Surname'], row_data['Gender'], row_data['Mobile Number'], row_data['Email'], row_data['Birthdate'], row_data['Age'], row_data['Password']])
 
-# Generate SQL INSERT statements 
-random_data_to_sql(25)
+def main():
+    file_format = input("Enter the file format (sql/csv): ").lower()
+    while file_format not in ['sql', 'csv']:
+        print("Invalid file format!")
+        file_format = input("Enter the file format (sql/csv): ").lower()
+    
+    number_of_data = int(input("Enter the number of data to generate: "))
+    
+    if file_format == 'sql':
+        random_data_to_sql(number_of_data)
+        print(f"{number_of_data} data entries generated and stored in 'random_generated_data.sql'")
+    elif file_format == 'csv':
+        random_data_to_csv(number_of_data)
+        print(f"{number_of_data} data entries generated and stored in 'random_generated_data.csv'")
 
-# Generate random entries and write them to a CSV file
-random_data_to_csv(25)
+if __name__ == "__main__":
+    main()
